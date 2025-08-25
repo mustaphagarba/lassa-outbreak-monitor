@@ -1,0 +1,20 @@
+{
+  "scrape_date": "2025-08-25T19:05:29.333268",
+  "total_reports": 50,
+  "date_range": "2024-W1 to 2025-W52",
+  "data_fields": [
+    "week",
+    "year",
+    "total_cases",
+    "confirmed_cases",
+    "deaths",
+    "case_fatality_rate",
+    "affected_states",
+    "affected_lgas",
+    "new_cases_week",
+    "new_deaths_week",
+    "pdf_url",
+    "title",
+    "epi_date"
+  ]
+}
