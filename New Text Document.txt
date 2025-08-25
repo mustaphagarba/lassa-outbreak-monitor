@@ -1,0 +1,132 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Lassa Fever Hotspot Prediction (DHIS2-Compatible)\n",
+    "\n",
+    "Notebook for pulling Lassa fever surveillance data from DHIS2 and preparing predictive hotspot models."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": ["## 1. Import Libraries"]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import requests\n",
+    "import pandas as pd\n",
+    "import geopandas as gpd\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "from sklearn.metrics import classification_report"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": ["## 2. Connect to DHIS2 API"]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "url = 'https://play.dhis2.org/2.39.1.2/api/analytics'\n",
+    "auth = ('admin', 'district')  # Replace with actual credentials\n",
+    "\n",
+    "# Example request parameters for Lassa fever cases\n",
+    "params = {\n",
+    "    'dimension': ['dx:abcd1234', 'ou:LEVEL-3', 'pe:202301;202302;202303'],\n",
+    "    'displayProperty': 'NAME',\n",
+    "    'outputIdScheme': 'NAME'\n",
+    "}\n",
+    "\n",
+    "response = requests.get(url, auth=auth, params=params)\n",
+    "lassa_data = response.json()\n",
+    "lassa_data"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": ["## 3. Convert API Response to DataFrame"]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rows = lassa_data.get('rows', [])\n",
+    "headers = [h['name'] for h in lassa_data.get('headers', [])]\n",
+    "lassa_df = pd.DataFrame(rows, columns=headers)\n",
+    "lassa_df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": ["## 4. Feature Engineering & Modeling"]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Example: prepare features and run simple model\n",
+    "X = lassa_df[['rainfall', 'temperature', 'humidity']]\n",
+    "y = (lassa_df['value'].astype(int) > 0).astype(int)\n",
+    "\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n",
+    "\n",
+    "model = RandomForestClassifier(n_estimators=100, random_state=42)\n",
+    "model.fit(X_train, y_train)\n",
+    "\n",
+    "preds = model.predict(X_test)\n",
+    "print(classification_report(y_test, preds))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": ["## 5. Save Processed Data"]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": ["lassa_df.to_csv('data/processed/lassa_dhis2.csv', index=False)"]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": ["## 6. Join with GIS Data"]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "boundaries = gpd.read_file('data/raw/nigeria_lga_shapefile.shp')\n",
+    "merged = boundaries.merge(lassa_df, left_on='lga_code', right_on='ou')\n",
+    "merged.plot(column='value', cmap='Reds', legend=True)\n",
+    "plt.title('Lassa Fever Cases by LGA (DHIS2 Data)')\n",
+    "plt.show()"
+   ]
+  }
+ ],
+ "metadata": {},
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
