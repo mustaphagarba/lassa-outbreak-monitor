@@ -21,8 +21,8 @@ The project aligns with public health priorities in early warning systems, spati
 ## Tools & Technologies
 - Python: pandas, geopandas, scikit-learn, folium, plotly
 - GIS Tools: QGIS (for validation and visualization)
-- Dashboard: Streamlit or Power BI
-- Data Management: PostgreSQL/PostGIS (optional)
+- Dashboard: Streamlit
+- Data Management: PostgreSQL
 
 ## Project Structure
 ```
