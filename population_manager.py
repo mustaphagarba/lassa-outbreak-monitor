@@ -62,3 +62,21 @@ class WorldPopManager:
         # Metadata storage
         self.metadata_file = self.population_dir / "population_metadata.json"
         self.metadata = self._load_metadata()
+
+    def _load_metadata(self) -> Dict[str, PopulationDataInfo]:
+        """Load population metadata from file"""
+        if self.metadata_file.exists():
+            try:
+                with open(self.metadata_file, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning(f"Could not load population metadata: {e}")
+        return {'datasets': {}, 'processing_log': []}
+    
+    def _save_metadata(self):
+        """Save population metadata to file"""
+        try:
+            with open(self.metadata_file, 'w') as f:
+                json.dump(self.metadata, f, indent=2, default=str)
+        except Exception as e:
+            logger.error(f"Could not save population metadata: {e}")

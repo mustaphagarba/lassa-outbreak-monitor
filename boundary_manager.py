@@ -386,31 +386,34 @@ class NigerianBoundaryManager:
         return final_states, final_lgas
     
     def load_boundaries(self, level: str = 'both') -> Union[gpd.GeoDataFrame, Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]]:
-        """Load processed boundary data"""
+        """Load processed boundary data, auto-creating empty files if missing"""
+
         states_file = self.processed_dir / "nigeria_states_unified.geojson"
         lgas_file = self.processed_dir / "nigeria_lgas_unified.geojson"
-        
-        if level == 'states' or level == 'state':
-            if not states_file.exists():
-                logger.error("Processed states file not found. Run create_unified_boundaries() first.")
-                return None
-            return gpd.read_file(states_file)
-        
-        elif level == 'lgas' or level == 'lga':
-            if not lgas_file.exists():
-                logger.error("Processed LGAs file not found. Run create_unified_boundaries() first.")
-                return None
-            return gpd.read_file(lgas_file)
-        
+
+        # Ensure states file exists
+        if not states_file.exists():
+            logger.warning("Processed states file not found. Creating empty GeoJSON.")
+            states_gdf = self._empty_gdf("state")
+            states_gdf.to_file(states_file, driver="GeoJSON")
+        else:
+            states_gdf = gpd.read_file(states_file)
+
+        # Ensure LGAs file exists
+        if not lgas_file.exists():
+            logger.warning("Processed LGAs file not found. Creating empty GeoJSON.")
+            lgas_gdf = self._empty_gdf("lga")
+            lgas_gdf.to_file(lgas_file, driver="GeoJSON")
+        else:
+            lgas_gdf = gpd.read_file(lgas_file)
+
+        if level in ('states', 'state'):
+            return states_gdf
+        elif level in ('lgas', 'lga'):
+            return lgas_gdf
         else:  # both
-            states_gdf = lgas_gdf = None
-            
-            if states_file.exists():
-                states_gdf = gpd.read_file(states_file)
-            if lgas_file.exists():
-                lgas_gdf = gpd.read_file(lgas_file)
-            
             return states_gdf, lgas_gdf
+
     
     def spatial_join_data(self, df: pd.DataFrame, lat_col: str, lon_col: str, 
                          level: str = 'state') -> pd.DataFrame:
@@ -419,8 +422,12 @@ class NigerianBoundaryManager:
         # Load appropriate boundaries
         if level == 'state':
             boundaries = self.load_boundaries('states')
+            if isinstance(boundaries, tuple):
+                boundaries = boundaries[0]
         else:
             boundaries = self.load_boundaries('lgas')
+            if isinstance(boundaries, tuple):
+                boundaries = boundaries[1]
         
         if boundaries is None:
             logger.error(f"No {level} boundaries available for spatial join")
@@ -448,7 +455,7 @@ class NigerianBoundaryManager:
         
         states_gdf, lgas_gdf = self.load_boundaries('both')
         
-        if states_gdf is not None:
+        if isinstance(states_gdf, gpd.GeoDataFrame):
             info['states'] = BoundaryInfo(
                 name="Nigerian States",
                 level="state",
