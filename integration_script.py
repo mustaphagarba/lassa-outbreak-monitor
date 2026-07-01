@@ -6,7 +6,7 @@ This script integrates the NCDC scraper with the boundary manager to create
 geospatially-enabled datasets for analysis and visualization.
 
 Usage:
-    python integrate_data.py [--max-files 50] [--force-download] [--skip-scraping]
+    python integration_script.py [--max-files 50] [--force-download] [--skip-scraping]
 """
 
 import sys
